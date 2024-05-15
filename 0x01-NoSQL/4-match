@@ -1,0 +1,2 @@
+//script that lists all documents with name="Holberton school" in the collection school
+mongo my_db --eval 'db.school.find({ name: "Holberton school" })'
