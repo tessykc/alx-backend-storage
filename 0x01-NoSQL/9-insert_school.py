@@ -4,33 +4,21 @@ from pymongo import MongoClient
 
 
 def insert_school(mongo_collection, **kwargs):
-    """
-    Inserts a new document into the specified MongoDB collection based on keyword arguments.
+  """Inserts a new document into the provided collection and returns the inserted document's _id.
 
-    Args:
-        mongo_collection: A pymongo collection object.
-        **kwargs: Keyword arguments representing the fields and values for the new document.
+  Args:
+      mongo_collection (pymongo.collection.Collection): The pymongo collection object.
+      **kwargs: Keyword arguments representing the document fields and their values.
 
-    Returns:
-        The new _id of the inserted document.
-    """
-    try:
-        result = mongo_collection.insert_one(kwargs)
-        return result.inserted_id
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
+  Returns:
+      ObjectId: The ObjectId of the inserted document.
+  """
 
-# Example usage:
-if __name__ == "__main__":
-    from pymongo import MongoClient
+  # Create the document dictionary from kwargs
+  document = {key: value for key, value in kwargs.items()}
 
-    client = MongoClient('mongodb://127.0.0.1:27017')
-    school_collection = client.my_db.school
-    new_school_id = insert_school(school_collection, name="UCSF", address="505 Parnassus Ave")
-    print("New school created: {}".format(new_school_id))
+  # Insert the document and get the result
+  result = mongo_collection.insert_one(document)
 
-    # List all documents in the collection
-    schools = list_all(school_collection)
-    for school in schools:
-        print("[{}] {} {}".format(school.get('_id'), school.get('name'), school.get('address', "")))
+  # Return the inserted document's _id
+  return result.inserted_id
