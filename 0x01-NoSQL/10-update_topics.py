@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+""" update_topics """
 from pymongo import MongoClient
 
 
