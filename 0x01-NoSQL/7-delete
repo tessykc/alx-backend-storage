@@ -1,0 +1,2 @@
+//script that deletes all documents with name="Holberton school" in the collection school
+mongo my_db --eval 'db.school.deleteMany({ name: "Holberton school" })'
