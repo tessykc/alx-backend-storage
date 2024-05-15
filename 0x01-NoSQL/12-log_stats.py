@@ -36,7 +36,7 @@ def count_method(collection, method):
   return collection.count_documents(filter)
 
 
-""" count stayus check """
+""" count status check """
 def count_status_check(collection):
   """Counts the number of documents where the path is "/status".
 
@@ -50,6 +50,48 @@ def count_status_check(collection):
 
   filter = {"path": "/status"}
   return collection.count_documents(filter)
+
+
+""" top_ips """
+def top_ips(collection, limit=10):
+  """Finds the top 'limit' most frequent IP addresses in the 
+  collection.
+
+  Args:
+      collection (pymongo.collection.Collection): The pymongo 
+      collection object.
+      limit (int, optional): The maximum number of IPs to return (default: 10).
+
+  Returns:
+      list: A list of dictionaries with 'ip' and 'count' keys 
+      for each top IP.
+  """
+
+  # Use aggregation to group by IP and count documents
+  pipeline = [
+      {
+          "$group": {
+              "_id": "$remote_addr",  # Group by IP address
+              "count": { "$sum": 1 }   # Count documents in each group
+          }
+      },
+      {
+          "$sort": { "count": -1 }  # Sort by count (descending)
+      },
+      {
+          "$limit": limit  # Limit the number of results
+      }
+  ]
+
+  # Execute the pipeline and convert results to a list
+  results = list(collection.aggregate(pipeline))
+
+  # Add 'ip' key to each document
+  for item in results:
+    item["ip"] = item["_id"]
+    del item["_id"]  # Remove temporary group ID
+
+  return results
 
 
 """ main """
