@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+""" insert_school """
 
 from pymongo import MongoClient
 
