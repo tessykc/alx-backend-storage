@@ -1,0 +1,5 @@
+//script that lists all documents in the collection school:
+//The database name will be passed as option of mongo command
+DB_NAME="my_db"
+mongo "$DB_NAME" --eval 'db.school.find()'
+echo "bye"
