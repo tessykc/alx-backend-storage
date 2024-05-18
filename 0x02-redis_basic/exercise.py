@@ -12,9 +12,11 @@ from functools import wraps
 
 class Cache:
   """
-  A simple cache class that utilizes Redis for storage with call history and method call counting.
+  A simple cache class that utilizes Redis for storage with call history and 
+  method call counting.
   """
 
+  
   def __init__(self):
     """
     Initializes the cache with a Redis client and flushes the existing database.
@@ -24,6 +26,7 @@ class Cache:
     self._call_counts = {}  # Dictionary to store method call counts
     self._call_history = {}  # Dictionary to store call history
 
+  
   def store(self, data: bytes | str | int | float) -> str:
     """
     Stores the provided data in Redis and returns the generated key.
@@ -39,6 +42,7 @@ class Cache:
     self._redis.set(key, data)
     return key
 
+  
   @count_calls  # Decorate with count_calls (already defined)
   @call_history  # Decorate with call_history (defined below)
   def get(self, key: str, fn: Optional[Callable] = None) -> Optional[bytes | str | int | float]:
@@ -71,18 +75,22 @@ class Cache:
     # If conversion fails, return bytes as default
     return data
 
+  
   def get_str(self, key: str) -> Optional[str]:
     """
-    Retrieves data from Redis for the provided key and converts it to a string using UTF-8 decoding.
+    Retrieves data from Redis for the provided key and converts it to a string 
+    using UTF-8 decoding.
 
     Args:
         key (str): The key to retrieve data for.
 
     Returns:
-        Optional[str]: The retrieved data as a string, or None if the key doesn't exist.
+        Optional[str]: The retrieved data as a string, or None if the key 
+        doesn't exist.
     """
 
     return self.get(key, lambda d: d.decode("utf-8"))
+
 
   def get_int(self, key: str) -> Optional[int]:
     """
@@ -92,11 +100,13 @@ class Cache:
         key (str): The key to retrieve data for.
 
     Returns:
-        Optional[int]: The retrieved data as an integer, or None if the key doesn't exist or conversion fails.
+        Optional[int]: The retrieved data as an integer, or None if the key 
+        doesn't exist or conversion fails.
     """
 
     return self.get(key, int)
 
+  
   def _count_call(self, method_name):
     """
     Increments the call count for the specified method.
@@ -107,6 +117,7 @@ class Cache:
 
     self._call_counts[method_name] = self._call_counts.get(method_name, 0) + 1
 
+  
   def get_call_count(self, method_name):
     """
     Retrieves the call count for the specified method.
@@ -132,6 +143,7 @@ def count_calls(method):
       Callable: The decorated method.
   """
 
+ 
   @wraps(method)
   def wrapper(self, *args, **kwargs):
     # Get the qualified method name
