@@ -8,6 +8,7 @@ import redis
 import uuid
 from functools import wraps
 
+
 class Cache:
     def __init__(self):
         """
@@ -18,6 +19,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
+    
     def store(self, data: bytes) -> str:
         """
         Store the input data in Redis using a random key (generated with uuid).
@@ -27,10 +29,13 @@ class Cache:
         self._redis.set(key, data)
         return key
 
+
 def call_history(method):
     """
     Decorator to store input and output history in Redis.
     """
+    
+    
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         method_name = method.__qualname__
@@ -51,6 +56,7 @@ def call_history(method):
 
 # Apply call_history decorator to Cache.store
 Cache.store = call_history(Cache.store)
+
 
 # Example usage
 if __name__ == "__main__":
