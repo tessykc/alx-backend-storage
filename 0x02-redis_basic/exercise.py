@@ -58,35 +58,22 @@ class Cache:
     Cache.store = call_history(Cache.store)
     
     
-    def replay(cache: redis.Redis, function_name: str) -> None:
-      """
-      Displays the call history for a function using Redis.
+    def replay(method):
+        """
+        Display the history of calls for a given method.
+        """
+        method_name = method.__qualname__
+        input_key = "{}:inputs".format(method_name)
+        output_key = "{}:outputs".format(method_name)
     
-      Args:
-          cache (redis.Redis): The Redis client connection.
-          function_name (str): The qualified name of the function.
-      """
+        # Retrieve input and output lists from Redis
+        inputs = cache._redis.lrange(input_key, 0, -1)
+        outputs = cache._redis.lrange(output_key, 0, -1)
     
-      # Construct the input and output key patterns
-      input_key_pattern = f"{function_name}:inputs:*"
-      output_key_pattern = f"{function_name}:outputs:*"
+        print(f"{method_name} was called {len(inputs)} times:")
+        for inp, outp in zip(inputs, outputs):
+            print(f"{method_name}(*{inp.decode()}) -> {outp.decode()}")
     
-      # Retrieve input and output lists using scan
-      input_keys, cursor = cache.scan(match=input_key_pattern, cursor=0, count=10)
-      output_keys, _ = cache.scan(match=output_key_pattern, cursor=cursor, count=10)
-    
-      # Combine input and output keys while maintaining order
-      call_keys = sorted(zip(input_keys, output_keys))
-    
-      # Print the call history
-      print(f"{function_name} was called {len(call_keys)} times:")
-      for i, (input_key, output_key) in enumerate(call_keys):
-        inputs = cache.lrange(input_key, 0, -1)
-        output = cache.get(output_key)
-        print(f"  Call {i+1}:")
-        print(f"    Inputs: {inputs}")
-        print(f"    Output: {output.decode('utf-8') if output else None}")
-
 
 # Example usage
 if __name__ == "__main__":
