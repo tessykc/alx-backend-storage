@@ -58,9 +58,30 @@ def call_history(method):
 Cache.store = call_history(Cache.store)
 
 
+def replay(method):
+    """
+    Display the history of calls for a given method.
+    """
+    method_name = method.__qualname__
+    input_key = "{}:inputs".format(method_name)
+    output_key = "{}:outputs".format(method_name)
+
+    # Retrieve input and output lists from Redis
+    inputs = cache._redis.lrange(input_key, 0, -1)
+    outputs = cache._redis.lrange(output_key, 0, -1)
+
+    print(f"{method_name} was called {len(inputs)} times:")
+    for inp, outp in zip(inputs, outputs):
+        print(f"{method_name}(*{inp.decode()}) -> {outp.decode()}")
+
+
 # Example usage
 if __name__ == "__main__":
     cache = Cache()
+    cache.store("foo")
+    cache.store("bar")
+    cache.store(42)
+    replay(cache.store)
     data = b"hello"
     key = cache.store(data)
     print(key)
