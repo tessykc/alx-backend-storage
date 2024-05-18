@@ -7,6 +7,7 @@ Cache class
 import uuid
 import redis
 from typing import Callable, Optional
+from functools import wraps
 
 
 class Cache:
@@ -21,6 +22,7 @@ class Cache:
     """
     self._redis = redis.Redis()  # Private attribute for Redis client
     self._redis.flushdb()  # Flush the Redis database
+    self._call_counts = {}  # Dictionary to store method call counts
 
   
   def store(self, data: bytes | str | int | float) -> str:
@@ -37,9 +39,10 @@ class Cache:
     key = str(uuid.uuid4())  # Generate a random key using UUID
     self._redis.set(key, data)  # Store the data with the generated key
     return key
-
-
-def get(self, key: str, fn: Optional[Callable] = None) -> Optional[bytes | str | int | float]:
+    
+    
+    @count_calls
+    def get(self, key: str, fn: Optional[Callable] = None) -> Optional[bytes | str | int | float]:
     """
     Retrieves data from Redis for the provided key and converts it using the optional callable.
 
@@ -97,6 +100,58 @@ def get(self, key: str, fn: Optional[Callable] = None) -> Optional[bytes | str |
     """
 
     return self.get(key, int)
+    
+  
+  def _count_call(self, method_name):
+    """
+    Increments the call count for the specified method.
+
+    Args:
+        method_name (str): The qualified name of the method.
+    """
+
+    self._call_counts[method_name] = self._call_counts.get(method_name, 0) + 1
+
+  
+  def get_call_count(self, method_name):
+    """
+    Retrieves the call count for the specified method.
+
+    Args:
+        method_name (str): The qualified name of the method.
+
+    Returns:
+        int: The call count for the method, or 0 if not called.
+    """
+
+    return self._call_counts.get(method_name, 0)
+
+  def count_calls(method):
+    """
+    Decorator to count calls to a method and store the count in Redis.
+
+    Args:
+        method (Callable): The method to be decorated.
+
+    Returns:
+        Callable: The decorated method.
+    """
+
+  
+  @wraps(method)
+  def wrapper(self, *args, **kwargs):
+    # Get the qualified method name
+    method_name = method.__qualname__
+
+    # Increment the call count
+    self._count_call(method_name)
+
+    # Call the original method
+    result = method(self, *args, **kwargs)
+
+    return result
+
+  return wrapper
 
 
 if __name__ == "__main__":
