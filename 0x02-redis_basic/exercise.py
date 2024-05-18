@@ -8,7 +8,6 @@ import redis
 import uuid
 from functools import wraps
 
-
 class Cache:
     def __init__(self):
         """
@@ -19,7 +18,6 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
-  
     def store(self, data: bytes) -> str:
         """
         Store the input data in Redis using a random key (generated with uuid).
@@ -29,21 +27,30 @@ class Cache:
         self._redis.set(key, data)
         return key
 
-
-def count_calls(method):
+def call_history(method):
     """
-    Decorator to count method calls using Redis.
+    Decorator to store input and output history in Redis.
     """
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         method_name = method.__qualname__
-        self._redis.incr(method_name)
-        return method(self, *args, **kwargs)
+        input_key = "{}:inputs".format(method_name)
+        output_key = "{}:outputs".format(method_name)
+
+        # Append input arguments to Redis list
+        self._redis.rpush(input_key, str(args))
+
+        # Execute the wrapped function
+        result = method(self, *args, **kwargs)
+
+        # Store the output in Redis list
+        self._redis.rpush(output_key, result)
+
+        return result
     return wrapper
 
-# Apply count_calls decorator to Cache.store
-Cache.store = count_calls(Cache.store)
-
+# Apply call_history decorator to Cache.store
+Cache.store = call_history(Cache.store)
 
 # Example usage
 if __name__ == "__main__":
@@ -54,4 +61,5 @@ if __name__ == "__main__":
 
     local_redis = redis.Redis()
     print(local_redis.get(key))
-    print(local_redis.get("Cache.store"))  # Check method call count
+    print(local_redis.lrange("Cache.store:inputs", 0, -1))
+    print(local_redis.lrange("Cache.store:outputs", 0, -1))
