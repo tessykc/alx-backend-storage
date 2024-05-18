@@ -12,19 +12,18 @@ from functools import wraps
 
 class Cache:
   """
-  A simple cache class that utilizes Redis for storage.
+  A simple cache class that utilizes Redis for storage with call history and method call counting.
   """
 
-  
   def __init__(self):
     """
     Initializes the cache with a Redis client and flushes the existing database.
     """
-    self._redis = redis.Redis()  # Private attribute for Redis client
+    self._redis = redis.Redis()
     self._redis.flushdb()  # Flush the Redis database
     self._call_counts = {}  # Dictionary to store method call counts
+    self._call_history = {}  # Dictionary to store call history
 
-  
   def store(self, data: bytes | str | int | float) -> str:
     """
     Stores the provided data in Redis and returns the generated key.
@@ -36,13 +35,13 @@ class Cache:
         str: The generated random key used to store the data.
     """
 
-    key = str(uuid.uuid4())  # Generate a random key using UUID
-    self._redis.set(key, data)  # Store the data with the generated key
+    key = str(uuid.uuid4())
+    self._redis.set(key, data)
     return key
-    
-    
-    @count_calls
-    def get(self, key: str, fn: Optional[Callable] = None) -> Optional[bytes | str | int | float]:
+
+  @count_calls  # Decorate with count_calls (already defined)
+  @call_history  # Decorate with call_history (defined below)
+  def get(self, key: str, fn: Optional[Callable] = None) -> Optional[bytes | str | int | float]:
     """
     Retrieves data from Redis for the provided key and converts it using the optional callable.
 
@@ -65,14 +64,12 @@ class Cache:
 
     # Handle basic data types returned by Redis (bytes, int)
     try:
-      # Try converting to integer first
       return int(data)
     except ValueError:
       pass
 
     # If conversion fails, return bytes as default
     return data
-
 
   def get_str(self, key: str) -> Optional[str]:
     """
@@ -87,7 +84,6 @@ class Cache:
 
     return self.get(key, lambda d: d.decode("utf-8"))
 
-
   def get_int(self, key: str) -> Optional[int]:
     """
     Retrieves data from Redis for the provided key and converts it to an integer.
@@ -100,8 +96,7 @@ class Cache:
     """
 
     return self.get(key, int)
-    
-  
+
   def _count_call(self, method_name):
     """
     Increments the call count for the specified method.
@@ -112,7 +107,6 @@ class Cache:
 
     self._call_counts[method_name] = self._call_counts.get(method_name, 0) + 1
 
-  
   def get_call_count(self, method_name):
     """
     Retrieves the call count for the specified method.
@@ -126,43 +120,22 @@ class Cache:
 
     return self._call_counts.get(method_name, 0)
 
-  def count_calls(method):
-    """
-    Decorator to count calls to a method and store the count in Redis.
 
-    Args:
-        method (Callable): The method to be decorated.
+def count_calls(method):
+  """
+  Decorator to count calls to a method and store the count in Redis.
 
-    Returns:
-        Callable: The decorated method.
-    """
+  Args:
+      method (Callable): The method to be decorated.
 
-  
+  Returns:
+      Callable: The decorated method.
+  """
+
   @wraps(method)
   def wrapper(self, *args, **kwargs):
     # Get the qualified method name
     method_name = method.__qualname__
 
     # Increment the call count
-    self._count_call(method_name)
-
-    # Call the original method
-    result = method(self, *args, **kwargs)
-
-    return result
-
-  return wrapper
-
-
-if __name__ == "__main__":
-  cache = Cache()
-
-  TEST_CASES = {
-      b"foo": None,
-      123: int,
-      "bar": lambda d: d.decode("utf-8")
-  }
-
-  for value, fn in TEST_CASES.items():
-    key = cache.store(value)
-    assert cache.get(key, fn=fn) == value
+    self
